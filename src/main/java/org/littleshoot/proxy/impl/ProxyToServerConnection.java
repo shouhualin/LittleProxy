@@ -32,15 +32,7 @@ import io.netty.handler.traffic.GlobalTrafficShapingHandler;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
-import org.littleshoot.proxy.ActivityTracker;
-import org.littleshoot.proxy.ChainedProxy;
-import org.littleshoot.proxy.ChainedProxyAdapter;
-import org.littleshoot.proxy.ChainedProxyManager;
-import org.littleshoot.proxy.FullFlowContext;
-import org.littleshoot.proxy.HttpFilters;
-import org.littleshoot.proxy.MitmManager;
-import org.littleshoot.proxy.TransportProtocol;
-import org.littleshoot.proxy.UnknownTransportProtocolException;
+import org.littleshoot.proxy.*;
 
 import javax.net.ssl.SSLProtocolException;
 import javax.net.ssl.SSLSession;
@@ -559,7 +551,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
             MitmManager mitmManager = proxyServer.getMitmManager();
             boolean isMitmEnabled = mitmManager != null;
 
-            if (isMitmEnabled) {
+            if (isMitmEnabled && currentFilters != HttpFiltersAdapter.NOOP_FILTER) {
                 // When MITM is enabled and when chained proxy is set up, remoteAddress
                 // will be the chained proxy's address. So we use serverHostAndPort
                 // which is the end server's address.
@@ -654,7 +646,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
              * when the next request is written. Writing the EmptyLastContent
              * resets its state.
              */
-            if(isMitmEnabled){
+            if(isMitmEnabled && currentFilters != HttpFiltersAdapter.NOOP_FILTER){
                 ChannelFuture future = writeToChannel(initialRequest);
                 future.addListener(new ChannelFutureListener() {
 

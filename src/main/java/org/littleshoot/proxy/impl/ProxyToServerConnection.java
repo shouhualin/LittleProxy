@@ -4,29 +4,11 @@ import com.google.common.net.HostAndPort;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ChannelFactory;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.*;
 import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.channel.udt.nio.NioUdtProvider;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMessage;
-import io.netty.handler.codec.http.HttpObject;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpRequestEncoder;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseDecoder;
-import io.netty.handler.codec.http.HttpResponseEncoder;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.handler.traffic.GlobalTrafficShapingHandler;
 import io.netty.util.ReferenceCounted;
@@ -43,12 +25,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.RejectedExecutionException;
 
-import static org.littleshoot.proxy.impl.ConnectionState.AWAITING_CHUNK;
-import static org.littleshoot.proxy.impl.ConnectionState.AWAITING_CONNECT_OK;
-import static org.littleshoot.proxy.impl.ConnectionState.AWAITING_INITIAL;
-import static org.littleshoot.proxy.impl.ConnectionState.CONNECTING;
-import static org.littleshoot.proxy.impl.ConnectionState.DISCONNECTED;
-import static org.littleshoot.proxy.impl.ConnectionState.HANDSHAKING;
+import static org.littleshoot.proxy.impl.ConnectionState.*;
 
 /**
  * <p>
@@ -244,8 +221,20 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
     }
 
     @Override
-    protected void readRaw(ByteBuf buf) {
-        clientConnection.write(buf);
+    protected void writeRaw(Object buf) {
+        Object response = currentFilters.proxyToServerRequest(buf);
+        if (response != null) {
+            LOG.debug("use response: {}", response);
+            clientConnection.writeRaw(response);
+            return;
+        }
+        super.writeRaw(buf);
+    }
+
+    @Override
+    protected void readRaw(Object buf) {
+        Object newBuf = currentFilters.serverToProxyResponse(buf);
+        clientConnection.write(newBuf);
     }
 
     /**
@@ -368,13 +357,13 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
             if (newState == HANDSHAKING) {
                 currentFilters.proxyToServerConnectionSSLHandshakeStarted();
             } else if (newState == AWAITING_INITIAL) {
-                currentFilters.proxyToServerConnectionSucceeded(ctx);
+                currentFilters.proxyToServerConnectionSucceeded(ctx, clientConnection, serverConnection);
             } else if (newState == DISCONNECTED) {
                 currentFilters.proxyToServerConnectionFailed();
             }
         } else if (getCurrentState() == HANDSHAKING) {
             if (newState == AWAITING_INITIAL) {
-                currentFilters.proxyToServerConnectionSucceeded(ctx);
+                currentFilters.proxyToServerConnectionSucceeded(ctx, clientConnection, serverConnection);
             } else if (newState == DISCONNECTED) {
                 currentFilters.proxyToServerConnectionFailed();
             }

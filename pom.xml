@@ -175,7 +175,11 @@
             <artifactId>barchart-udt-bundle</artifactId>
             <version>2.3.0</version>
         </dependency>
-
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.7.11</version>
+        </dependency>
         <dependency>
             <groupId>org.littleshoot</groupId>
             <artifactId>dnssec4j</artifactId>
@@ -289,6 +293,7 @@
                 <artifactId>netty-example</artifactId>
                 <version>${netty.version}</version>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 

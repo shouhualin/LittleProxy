@@ -14,7 +14,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.littleshoot.proxy.extras.SelfSignedSslEngineSource;
+import org.littleshoot.proxy.impl.ClientToProxyConnection;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
+import org.littleshoot.proxy.impl.ProxyToServerConnection;
 import org.littleshoot.proxy.test.HttpClientUtil;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -277,7 +279,7 @@ public class HttpFilterTest {
                     }
 
                     @Override
-                    public void proxyToServerConnectionSucceeded(ChannelHandlerContext ctx) {
+                    public void proxyToServerConnectionSucceeded(ChannelHandlerContext ctx, ClientToProxyConnection clientToProxyConnection, ProxyToServerConnection proxyToServerConnection) {
                         proxyToServerConnectionSucceededNanos.set(requestCount.get(), now());
                         serverCtxReference.set(ctx);
                     }
@@ -903,8 +905,28 @@ public class HttpFilterTest {
         }
 
         @Override
-        public void proxyToServerConnectionSucceeded(ChannelHandlerContext serverCtx) {
+        public void proxyToServerConnectionSucceeded(ChannelHandlerContext serverCtx, ClientToProxyConnection clientToProxyConnection, ProxyToServerConnection proxyToServerConnection) {
             proxyToServerConnectionSucceeded.set(true);
+        }
+
+        @Override
+        public Object clientToProxyRequest(Object buf) {
+            return null;
+        }
+
+        @Override
+        public Object proxyToClientResponse(Object buf) {
+            return buf;
+        }
+
+        @Override
+        public Object proxyToServerRequest(Object buf) {
+            return null;
+        }
+
+        @Override
+        public Object serverToProxyResponse(Object buf) {
+            return buf;
         }
 
         @Override

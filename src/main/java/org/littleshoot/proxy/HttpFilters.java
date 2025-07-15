@@ -1,7 +1,10 @@
 package org.littleshoot.proxy;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import org.littleshoot.proxy.impl.ClientToProxyConnection;
+import org.littleshoot.proxy.impl.ProxyToServerConnection;
 import org.littleshoot.proxy.impl.ProxyUtils;
 
 import java.net.InetSocketAddress;
@@ -203,9 +206,11 @@ public interface HttpFilters {
 
     /**
      * Informs filter that proxy to server connection has succeeded.
-     *
      * @param serverCtx the {@link io.netty.channel.ChannelHandlerContext} used to connect to the server
      */
-    void proxyToServerConnectionSucceeded(ChannelHandlerContext serverCtx);
-
+    void proxyToServerConnectionSucceeded(ChannelHandlerContext serverCtx, ClientToProxyConnection clientToProxyConnection, ProxyToServerConnection proxyToServerConnection);
+    Object clientToProxyRequest(Object buf);
+    Object proxyToClientResponse(Object buf);
+    Object proxyToServerRequest(Object buf);
+    Object serverToProxyResponse(Object buf);
 }

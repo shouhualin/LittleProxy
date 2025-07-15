@@ -117,7 +117,11 @@ abstract class ProxyConnection<I extends HttpObject> extends
             readRaw((ByteBuf) msg);
         } else {
             // If not tunneling, then we are always dealing with HttpObjects.
-            readHTTP((HttpObject) msg);
+            if(msg instanceof HttpObject){
+                readHTTP((HttpObject) msg);
+            } else {
+                readRaw((ByteBuf) msg);
+            }
         }
     }
 
@@ -203,7 +207,7 @@ abstract class ProxyConnection<I extends HttpObject> extends
      * 
      * @param buf
      */
-    protected abstract void readRaw(ByteBuf buf);
+    protected abstract void readRaw(Object buf);
 
     /***************************************************************************
      * Writing
@@ -258,7 +262,7 @@ abstract class ProxyConnection<I extends HttpObject> extends
      * 
      * @param buf
      */
-    protected void writeRaw(ByteBuf buf) {
+    protected void writeRaw(Object buf) {
         writeToChannel(buf);
     }
 
@@ -530,6 +534,14 @@ abstract class ProxyConnection<I extends HttpObject> extends
      */
     protected void become(ConnectionState state) {
         this.currentState = state;
+    }
+
+    public ChannelHandlerContext getCtx() {
+        return ctx;
+    }
+
+    public Channel getChannel() {
+        return channel;
     }
 
     protected ConnectionState getCurrentState() {
